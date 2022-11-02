@@ -1,3 +1,5 @@
+const HDWalletProvider = require("@truffle/hdwallet-provider");
+require('dotenv').config();
 /**
  * Use this file to configure your truffle project. It's seeded with some
  * common settings for different networks and features like migrations,
@@ -46,6 +48,15 @@ module.exports = {
      port: 8545,            // Standard Ethereum port (default: none)
      network_id: "*",       // Any network (default: none)
     },
+
+    camdlTestnet: {
+      network_id: 195,
+      provider: () => new HDWalletProvider([process.env.PRIVATE_KEY], "https://rpc1.testnet.camdl.gov.kh", 0, 1),
+      gas: 140000,
+      confirmations: 2,
+      // gasPrice: 2000000000000,
+      // gasLimit: 14000000
+    }
     //
     // An additional network, but with some advanced options…
     // advanced: {
@@ -84,7 +95,7 @@ module.exports = {
   // Configure your compilers
   compilers: {
     solc: {
-      version: "0.8.15",      // Fetch exact version from solc-bin (default: truffle's version)
+      version: "0.8.17",      // Fetch exact version from solc-bin (default: truffle's version)
       // docker: true,        // Use "0.5.1" you've installed locally with docker (default: false)
       // settings: {          // See the solidity docs for advice about optimization and evmVersion
       //  optimizer: {
