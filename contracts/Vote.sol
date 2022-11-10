@@ -3,82 +3,99 @@ pragma solidity >=0.4.22 <0.9.0;
 
 contract Vote {
   struct Option{
-    uint8 index;
+    uint256 index; // 1 based
     uint votes;
-    bytes32 name;
   }
 
-  struct VoteTopic {
-    uint256 index;
-    uint8 optionId;
-    uint256 voterId;
-    bytes32 name;
-    Option[] options;
-    mapping(address => uint256) voters;
+  struct Topic {
+    uint256 index; // 1 based
+    address[] voters;
+    bytes32[] options;
+    mapping(bytes32 => Option) nameToOption;
   }
 
-  mapping(uint256 => VoteTopic) private topics;
-  uint256 internal topicId;
+  bytes32[] private topics;
+  mapping(bytes32 => Topic) private nameToTopic;
 
-  event Voted(uint256 topicId, address voter);
+  event Voted(bytes32 topicName, address voter);
   event TopicAdded(uint256 topicId, bytes32 name);
-  event OptionAdded(uint256 topicId, uint8 optionId, bytes32 name);
+  event OptionAdded(bytes32 topicName, uint256 index, bytes32 name);
 
-  function addTopic(bytes32 _name) external {
+  modifier validName(bytes32 _name) {
     require(_name != 0, "Name can't be empty");
-    topicId++;
-    topics[topicId].name = _name;
-    topics[topicId].index = topicId;
-    emit TopicAdded(topicId, _name);
+    _;
   }
 
-  function addOption(uint256 _topicId, bytes32 _name) external {
-    require(topics[_topicId].index != 0, "Topic ID not found");
-    VoteTopic storage _topic = topics[_topicId];
-    _topic.optionId++;
-
-    // create new Option
-    Option memory _option = Option(_topic.optionId, 0, _name);
-    _topic.options.push(_option);
-    emit OptionAdded(_topicId, _topic.optionId, _name);
+  modifier topicExist(bytes32 _name) {
+    require(isTopicExists(_name), "Topic not found");
+    _;
   }
 
-  function vote(uint256 _topicId, uint8 _optionId) external {
-    require(topics[_topicId].voters[msg.sender] == 0, "Address already voted");
-    VoteTopic storage topic = topics[_topicId];
-    topic.voterId++;
-    topic.voters[msg.sender] = topic.voterId;
-
-    Option storage option = topic.options[_optionId];
-    option.votes++;
-
-    emit Voted(_topicId, msg.sender);
+  modifier optionExist(bytes32 _topicName, bytes32 _optionName) {
+    require(isOptionExists(_topicName, _optionName), "Option not found");
+    _;
   }
 
-  function getTopic(uint256 _topicId) external view returns (bytes32) {
-    require(topics[_topicId].index != 0, "Topic ID not found");
-    return topics[_topicId].name;
+  function isTopicExists(bytes32 _name) public view returns (bool) {
+    return nameToTopic[_name].index > 0;
   }
 
-  function getOptionCount(uint256 _topicId) external view returns (uint8) {
-    require(topics[_topicId].index != 0, "Topic ID not found");
-    return topics[_topicId].optionId;
+  function isOptionExists(bytes32 _topicName, bytes32 _optionName) 
+    public view returns (bool) 
+  {
+    return nameToTopic[_topicName].nameToOption[_optionName].index > 0;
   }
 
-  function getTopicCount() external view returns (uint256) {
-    return topicId;
+  function addTopic(bytes32 _name) external validName(_name) {
+    topics.push(_name);
+    nameToTopic[_name].index = topics.length;
+    emit TopicAdded(topics.length, _name);
   }
 
-  function getOptions(uint256 _topicId, uint8 _optionId) external view returns (bytes32) {
-    require(topics[_topicId].index != 0, "Topic ID not found");
-    require(topics[_topicId].optionId >= _optionId, "Option ID not found");
-    VoteTopic storage _topic = topics[topicId];
-    for(uint i=0; i<_topic.options.length; i++){
-      Option memory _option = _topic.options[i];
-      if(_option.index == _optionId) {
-        return (_option.name);
-      }
-    }
-    revert("Option ID not found");
+  function addOption(bytes32 _topicName, bytes32 _optionName) external 
+    validName(_topicName) topicExist(_topicName) validName(_optionName) 
+  {
+    // push new option to topic
+    Topic storage _topic = nameToTopic[_topicName];
+    _topic.options.push(_optionName);
+
+    // Initilize option index
+    Option storage _option = _topic.nameToOption[_optionName];
+    _option.index = _topic.options.length;
+
+    emit OptionAdded(_topicName, _option.index, _optionName);
+  }
+
+  function addVote(bytes32 _topicName, bytes32 _optionName) external 
+    validName(_topicName) topicExist(_topicName) 
+    validName(_optionName) optionExist(_topicName, _optionName) 
+  {
+    // Increment vote count in option and add address to topic
+    nameToTopic[_topicName].nameToOption[_optionName].votes++;
+    nameToTopic[_topicName].voters.push(msg.sender);
+    emit Voted(_topicName, msg.sender);
+  }
+
+  function getTopics() external view returns (bytes32[] memory) {
+    return topics;
+  }
+
+  function getVoteOptions(bytes32 _name) external 
+    validName(_name) topicExist(_name) view returns (bytes32[] memory) 
+  {
+    return nameToTopic[_name].options;
+  }
+
+  function getVoters(bytes32 _name) external validName(_name) topicExist(_name) 
+    view returns (address[] memory) 
+  {
+    return nameToTopic[_name].voters;
+  }
+
+  function getVoteCount(bytes32 _topicName, bytes32 _optionName) external
+   validName(_topicName) topicExist(_topicName) validName(_optionName) 
+   optionExist(_topicName, _optionName) view returns (uint256) 
+  {
+    return nameToTopic[_topicName].nameToOption[_optionName].votes;
   }
 }
