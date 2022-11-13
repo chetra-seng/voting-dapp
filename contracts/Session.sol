@@ -71,7 +71,7 @@ contract Session is Ownable{
     }
   }
 
-  function startSession() external onlyOwner onlyInActive {
+  function startSession() internal onlyInActive {
     indexToSession[1].blockNumber = block.number + sessionBlock;
     indexToSession[2].blockNumber = block.number + (2 * sessionBlock);
     indexToSession[0].blockNumber = block.number + (3 * sessionBlock);

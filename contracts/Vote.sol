@@ -67,6 +67,7 @@ contract Vote is Session {
   function addTopic(bytes32 _name) external validName(_name) onlyOwner onlyInActive{
     topics.push(_name);
     nameToTopic[_name].index = topics.length;
+    startSession();
     emit TopicAdded(topics.length, _name);
   }
 
@@ -98,6 +99,10 @@ contract Vote is Session {
 
   function getTopics() external view returns (bytes32[] memory) {
     return topics;
+  }
+
+  function getLatestTopic() external view returns (bytes32) {
+    return topics[topics.length - 1];
   }
 
   function getVoteOptions(bytes32 _name) external 
