@@ -52,8 +52,8 @@ module.exports = {
     camdlTestnet: {
       network_id: 195,
       provider: () => new HDWalletProvider([process.env.PRIVATE_KEY], "https://rpc1.testnet.camdl.gov.kh", 0, 1),
-      gas: 140000,
       confirmations: 2,
+      timeoutBlocks: 200,
       // gasPrice: 2000000000000,
       // gasLimit: 14000000
     }

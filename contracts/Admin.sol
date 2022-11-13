@@ -83,4 +83,8 @@ contract Admin is Ownable {
 
     emit AdminRemoved(_wallet);
   }
+
+  function isAdmin(address _wallet) public view validAddress(_wallet) returns (bool) {
+    return addrToAdmin[_wallet].index > 0;
+  }
 }
